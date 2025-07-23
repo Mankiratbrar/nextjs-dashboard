@@ -3,6 +3,8 @@ import {z} from 'zod';
 import postgres from 'postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { signIn } from '@/auth';
+import { AuthError } from 'next-auth';
 
 const sql = postgres(process.env.POSTGRES_URL!,{ssl:require});
 
@@ -100,3 +102,25 @@ export async function deleteInvoice(id:string) {
     revalidatePath('/dashboard/invoices');
 }
 
+export async function authenticate(
+    prevState: String|undefined,
+    formData : FormData
+) {
+    try {
+        await signIn('credentials',formData)
+    }catch(error){
+        if(error instanceof AuthError)
+        {
+            switch (error.type) {
+                case 'CredentialsSignin':
+                    return ('Invaild login details')
+                    break;
+            
+                default:
+                    return('Something is wrong')
+                    break;
+            }
+        }
+        throw error
+    }
+}
